@@ -1,4 +1,5 @@
 const { spawn } = require('child_process');
+const fs = require('fs');
 
 'use strict';
 
@@ -10,7 +11,7 @@ var querystring     = require('querystring');
 var path            = require('path');
 var util            = require('../lib/util');
 
-router.get('/authweblogin', function(req, res) {
+router.post('/authweblogin', function(req, res) {
   var ls = spawn('sfdx force:auth:web:login -s',[''], {shell:true});
   ls.stdout.on('data', (data) => {
 	console.log(`Auth: stdout: ${data}`);
@@ -18,8 +19,11 @@ router.get('/authweblogin', function(req, res) {
   return res.sendStatus(200);
 });
 
-router.get('/deployclass/:file/:cwd', function(req, res) {
-  var deploy = spawn(`sfdx force:source:deploy -m ApexClass:${req.params.file}`,[''], {shell:true, cwd:`${req.params.cwd}`});
+router.post('/deployclass', function(req, res) {
+  var deploy = spawn(`sfdx force:source:deploy -m ApexClass:${req.body.file}`,[], {
+    shell:true, 
+    cwd:`${req.body.cwd}`
+  });
 
   deploy.stdout.on('data', (data) => {
     console.log(`Deploy: stdout: ${data}`);
@@ -35,8 +39,10 @@ router.get('/deployclass/:file/:cwd', function(req, res) {
   return res.sendStatus(200);
 });
 
-router.get('/executeanonymous/:codeChuck', function(req,res) {
-  var execAnon = spawn(`sfdx force:apex:execute << ${req.params.codeChunk}`,[''], {shell:true});
+router.post('/executeanonymous', function(req,res) {
+  fs.writeFileSync("C:\\Users\\thanuscin\\Desktop\\MavensMate\\execAnon.txt", req.body.code);
+
+  var execAnon = spawn(`sfdx force:apex:execute -f execAnon.txt`,[''], {shell:true});
 
   execAnon.stdout.on('data', (data) => {
     console.log(`execAnon: stdout: ${data}`);
@@ -47,6 +53,7 @@ router.get('/executeanonymous/:codeChuck', function(req,res) {
   });
   
   execAnon.on('close', (code) => {
+    fs.unlinkSync("C:\\Users\\thanuscin\\Desktop\\MavensMate\\execAnon.txt");
     console.log(`execAnon: child process exited with code ${code}`);
   });
   return res.sendStatus(200);
